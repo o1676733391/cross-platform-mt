@@ -18,8 +18,22 @@ router.post("/", upload.single("image"), async (req, res) => {
     const { username, email, password } = req.body;
     let imageFileId = "";
 
+    console.log("📝 Request body:", { username, email });
+    console.log("📷 File received:", req.file ? {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } : "No file");
+
     // Upload image to GridFS if provided
     if (req.file) {
+      console.log("🚀 Starting GridFS upload...");
+      
+      // Check if MongoDB is connected
+      if (!mongoose.connection.db) {
+        throw new Error("MongoDB not connected");
+      }
       const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
         bucketName: "uploads"
       });
@@ -38,11 +52,20 @@ router.post("/", upload.single("image"), async (req, res) => {
 
       // Wait for upload to finish
       await new Promise((resolve, reject) => {
-        uploadStream.on("finish", resolve);
-        uploadStream.on("error", reject);
+        uploadStream.on("finish", () => {
+          console.log("✅ GridFS upload finished");
+          resolve();
+        });
+        uploadStream.on("error", (error) => {
+          console.error("❌ GridFS upload error:", error);
+          reject(error);
+        });
       });
 
       imageFileId = uploadStream.id.toString();
+      console.log("💾 Saved fileId:", imageFileId);
+    } else {
+      console.log("⚠️ No file to upload");
     }
 
     const newUser = await User.create({ 
@@ -51,6 +74,13 @@ router.post("/", upload.single("image"), async (req, res) => {
       password, 
       image: imageFileId 
     });
+    
+    console.log("✅ User created:", { 
+      _id: newUser._id, 
+      username: newUser.username,
+      hasImage: !!newUser.image 
+    });
+    
     res.status(201).json(newUser);
   } catch (err) {
     console.error("Create user error:", err);

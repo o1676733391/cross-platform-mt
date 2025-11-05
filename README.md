@@ -1,6 +1,15 @@
 # 🎓 User Admin App - Đồ án giữa kỳ
 
-Ứng dụng quản lý Users với Backend (Node.js + MongoDB) và Frontend (React Native Expo)
+Ứng dụng quản lý Users với Backend (Node.js + MongoDB + **GridFS**) và Frontend (React Native Expo)
+
+## ⚡ NEW: GridFS Image Storage
+
+✅ **Ảnh giờ được lưu trực tiếp trong MongoDB (GridFS)** thay vì file system  
+✅ **Hoạt động hoàn hảo trên Vercel serverless**  
+✅ **Tự động backup cùng database**
+
+👉 Xem [QUICKSTART_GRIDFS.md](QUICKSTART_GRIDFS.md) để test ngay!  
+📚 Chi tiết kỹ thuật: [backend/GRIDFS.md](backend/GRIDFS.md)
 
 ---
 
