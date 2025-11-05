@@ -1,16 +1,49 @@
-import axios from "axios";
+const API_URL = "https://cross-platform-mt.vercel.app/api/users";
 
-export const API_URL = "https://cross-platform-mt.vercel.app/api/users"; 
+const handleResponse = async (response) => {
+  const raw = await response.text();
+  let parsed;
 
-// GET: Lấy tất cả users
-export const getUsers = () => axios.get(API_URL);
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    parsed = raw;
+  }
 
-// POST: Tạo user mới
-export const addUser = (data) => axios.post(API_URL, data);
+  if (!response.ok) {
+    const message = parsed?.message || parsed || `Request failed (${response.status})`;
+    throw new Error(message);
+  }
 
-// PUT: Cập nhật user
-export const updateUser = (id, data) =>
-  axios.put(`${API_URL}/${id}`, data);
+  return parsed;
+};
 
-// DELETE: Xóa user
-export const deleteUser = (id) => axios.delete(`${API_URL}/${id}`);
+export const getUsers = async () => {
+  const response = await fetch(API_URL);
+  return handleResponse(response);
+};
+
+export const addUser = async (formData) => {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse(response);
+};
+
+export const updateUser = async (id, formData) => {
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: "PUT",
+    body: formData,
+  });
+  return handleResponse(response);
+};
+
+export const deleteUser = async (id) => {
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: "DELETE",
+  });
+  return handleResponse(response);
+};
+
+export { API_URL };

@@ -1,23 +1,9 @@
 # GridFS Image Storage - Implementation Guide
 
-## ✅ What Changed
 
 Chuyển từ lưu file vào thư mục `uploads/` sang **GridFS** (lưu trực tiếp trong MongoDB).
 
-### Before (File System)
-- ❌ File lưu trong `uploads/` folder
-- ❌ Không hoạt động trên Vercel (ephemeral filesystem)
-- ❌ Khó scale khi nhiều server
-
-### After (GridFS)
-- ✅ File lưu trong MongoDB dưới dạng chunks
-- ✅ Hoạt động trên Vercel serverless
-- ✅ Dễ backup cùng database
-- ✅ Tự động có được distribution nếu MongoDB có replica set
-
----
-
-## 🔧 Technical Implementation
+## Technical Implementation
 
 ### 1. Storage Method
 - **multer.memoryStorage()** - File được upload vào RAM buffer thay vì disk
@@ -79,7 +65,7 @@ Example `uploads.files`:
 
 ---
 
-## 🚀 API Endpoints
+## API Endpoints
 
 ### Base URL
 - Local: `http://localhost:5000`
@@ -112,7 +98,7 @@ https://cross-platform-mt.vercel.app/api/files/507f191e810c19729de860ea
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 ```env
 PORT=5000
@@ -125,7 +111,7 @@ BASE_URL=https://cross-platform-mt.vercel.app
 
 ---
 
-## 📝 Usage Examples
+## Usage Examples
 
 ### Test với Postman
 
@@ -167,7 +153,7 @@ Old image automatically deleted from GridFS.
 
 ---
 
-## ⚠️ Vercel Deployment Notes
+## Vercel Deployment Notes
 
 ### Connection Reuse
 MongoDB connections must be reused across serverless function invocations to avoid hitting connection limits.
@@ -195,7 +181,7 @@ mongoose.connect(uri, {
 
 ---
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Error: "Cannot find module 'mongodb'"
 ```bash
@@ -220,63 +206,3 @@ Check mongoose connection is established before using GridFS.
 - Check for connection leaks
 
 ---
-
-## 📊 Performance Comparison
-
-| Metric | File System | GridFS |
-|--------|-------------|---------|
-| Vercel Compatible | ❌ No | ✅ Yes |
-| Backup with DB | ❌ No | ✅ Yes |
-| CDN-friendly | ✅ Easy | ⚠️ Need proxy |
-| Large files (>100MB) | ✅ Fast | ⚠️ Slower |
-| Small files (<5MB) | ✅ Fast | ✅ Fast |
-| Horizontal scaling | ❌ Need shared FS | ✅ Native |
-
----
-
-## 🎯 Next Steps (Optional Improvements)
-
-1. **Add image compression** (sharp, jimp)
-```bash
-npm install sharp
-```
-
-2. **Add file type validation**
-```javascript
-const upload = multer({
-  storage: multer.memoryStorage(),
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images allowed'));
-    }
-  }
-});
-```
-
-3. **Add thumbnail generation**
-- Store multiple sizes in GridFS
-- Serve appropriate size based on client
-
-4. **Use CDN** (Cloudflare, CloudFront)
-- Proxy `/api/files/*` through CDN
-- Set long cache TTL
-
-5. **Migrate to external storage** (if needed)
-- Cloudinary: Best for images (transformations, CDN)
-- AWS S3: Best for any file type
-- Keep current API, just change storage backend
-
----
-
-## 📚 References
-
-- [MongoDB GridFS Docs](https://www.mongodb.com/docs/manual/core/gridfs/)
-- [Mongoose GridFS Guide](https://mongoosejs.com/docs/api/gridfsstream.html)
-- [Vercel Serverless Functions](https://vercel.com/docs/functions/serverless-functions)
-- [Multer Documentation](https://github.com/expressjs/multer)
-
----
-
-**✅ GridFS implementation complete!**

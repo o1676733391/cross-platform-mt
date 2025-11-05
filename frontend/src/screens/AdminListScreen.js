@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   FlatList,
@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { getUsers, deleteUser } from "../api/api";
 import UserItem from "../components/UserItem";
 
@@ -17,58 +19,86 @@ export default function AdminListScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getUsers();
-      setUsers(res.data);
+  const data = await getUsers();
+  setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể tải danh sách users: " + error.message);
-      console.error(error);
+      const message = error?.message || "Không thể tải danh sách users";
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.alert(message);
+      } else {
+        Alert.alert("Lỗi", message);
+      }
+      console.error("Load users error", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadUsers();
-    
-    // Listen for screen focus to reload users
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadUsers();
-    });
-    
-    return unsubscribe;
-  }, [navigation]);
+  }, [loadUsers]);
 
-  const onRefresh = async () => {
+  useFocusEffect(
+    useCallback(() => {
+      loadUsers();
+    }, [loadUsers])
+  );
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadUsers();
     setRefreshing(false);
-  };
+  }, [loadUsers]);
 
-  const handleDelete = (id) => {
-    Alert.alert(
-      "Xác nhận xóa",
-      "Bạn có chắc chắn muốn xóa user này?",
-      [
+  const confirmAndDelete = useCallback(
+    async (id) => {
+      try {
+        await deleteUser(id);
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.alert("User đã được xóa");
+        } else {
+          Alert.alert("Thành công", "User đã được xóa");
+        }
+        loadUsers();
+      } catch (error) {
+        const message = error?.message || "Không thể xóa user";
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.alert(message);
+        } else {
+          Alert.alert("Lỗi", message);
+        }
+        console.error("Delete user error", error);
+      }
+    },
+    [loadUsers]
+  );
+
+  const handleDelete = useCallback(
+    (id) => {
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        const confirmed = window.confirm(
+          "Bạn có chắc chắn muốn xóa user này?"
+        );
+        if (confirmed) {
+          confirmAndDelete(id);
+        }
+        return;
+      }
+
+      Alert.alert("Xác nhận xóa", "Bạn có chắc chắn muốn xóa user này?", [
         { text: "Hủy", style: "cancel" },
         {
           text: "Xóa",
           style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteUser(id);
-              Alert.alert("Thành công", "User đã được xóa");
-              loadUsers();
-            } catch (error) {
-              Alert.alert("Lỗi", "Không thể xóa user: " + error.message);
-            }
-          },
+          onPress: () => confirmAndDelete(id),
         },
-      ]
-    );
-  };
+      ]);
+    },
+    [confirmAndDelete]
+  );
 
   if (loading) {
     return (
@@ -91,7 +121,9 @@ export default function AdminListScreen({ navigation }) {
       {users.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Chưa có user nào</Text>
-          <Text style={styles.emptySubText}>Nhấn nút "Thêm User Mới" để bắt đầu</Text>
+          <Text style={styles.emptySubText}>
+            Nhấn nút "Thêm User Mới" để bắt đầu
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -100,9 +132,7 @@ export default function AdminListScreen({ navigation }) {
           renderItem={({ item }) => (
             <UserItem
               user={item}
-              onEdit={() =>
-                navigation.navigate("EditUser", { user: item })
-              }
+              onEdit={() => navigation.navigate("EditUser", { user: item })}
               onDelete={() => handleDelete(item._id)}
             />
           )}

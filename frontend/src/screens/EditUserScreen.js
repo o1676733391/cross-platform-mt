@@ -31,9 +31,7 @@ export default function EditUserScreen({ navigation, route }) {
       return;
     }
 
-    const pickerOptions = ImagePicker.MediaType
-      ? { mediaTypes: [ImagePicker.MediaType.IMAGES] }
-      : { mediaTypes: ImagePicker.MediaTypeOptions.Images };
+    const pickerOptions = { mediaTypes: ["images"] };
 
     const result = await ImagePicker.launchImageLibraryAsync({
       ...pickerOptions,
@@ -103,17 +101,28 @@ export default function EditUserScreen({ navigation, route }) {
       }
 
       await updateUser(user._id, formData);
-      Alert.alert("Thành công", "User đã được cập nhật!", [
-        {
-          text: "OK",
-          onPress: () => {
-            navigation.goBack();
+
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.alert("User đã được cập nhật!");
+        navigation.goBack();
+      } else {
+        Alert.alert("Thành công", "User đã được cập nhật!", [
+          {
+            text: "OK",
+            onPress: () => {
+              navigation.goBack();
+            },
           },
-        },
-      ]);
+        ]);
+      }
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể cập nhật user: " + error.message);
-      console.error(error);
+      const message = error?.message || "Không thể cập nhật user";
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.alert("Không thể cập nhật user: " + message);
+      } else {
+        Alert.alert("Lỗi", "Không thể cập nhật user: " + message);
+      }
+      console.error("Update user error", error);
     } finally {
       setLoading(false);
     }
