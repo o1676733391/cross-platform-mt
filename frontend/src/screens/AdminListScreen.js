@@ -32,7 +32,14 @@ export default function AdminListScreen({ navigation }) {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+    
+    // Listen for screen focus to reload users
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadUsers();
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -76,7 +83,7 @@ export default function AdminListScreen({ navigation }) {
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => navigation.navigate("AddUser", { refresh: loadUsers })}
+        onPress={() => navigation.navigate("AddUser")}
       >
         <Text style={styles.addButtonText}>➕ Thêm User Mới</Text>
       </TouchableOpacity>
@@ -94,7 +101,7 @@ export default function AdminListScreen({ navigation }) {
             <UserItem
               user={item}
               onEdit={() =>
-                navigation.navigate("EditUser", { user: item, refresh: loadUsers })
+                navigation.navigate("EditUser", { user: item })
               }
               onDelete={() => handleDelete(item._id)}
             />

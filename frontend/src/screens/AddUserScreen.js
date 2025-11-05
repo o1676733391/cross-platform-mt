@@ -9,15 +9,16 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { addUser } from "../api/api";
 
-export default function AddUserScreen({ navigation, route }) {
+export default function AddUserScreen({ navigation }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [image, setImage] = useState(null);
+  const [imageAsset, setImageAsset] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const pickImage = async () => {
@@ -28,15 +29,19 @@ export default function AddUserScreen({ navigation, route }) {
       return;
     }
 
+    const pickerOptions = ImagePicker.MediaType
+      ? { mediaTypes: [ImagePicker.MediaType.IMAGES] }
+      : { mediaTypes: ImagePicker.MediaTypeOptions.Images };
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      ...pickerOptions,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      setImageAsset(result.assets[0]);
     }
   };
 
@@ -77,16 +82,21 @@ export default function AddUserScreen({ navigation, route }) {
       formData.append("email", email);
       formData.append("password", password);
 
-      if (image) {
-        const filename = image.split("/").pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image/jpeg`;
+      if (imageAsset) {
+        const filename = imageAsset.fileName || imageAsset.uri.split("/").pop() || `photo_${Date.now()}.jpg`;
+        const mimeType = imageAsset.mimeType || imageAsset.type || "image/jpeg";
 
-        formData.append("image", {
-          uri: image,
-          name: filename,
-          type: type,
-        });
+        if (Platform.OS === "web") {
+          const response = await fetch(imageAsset.uri);
+          const blob = await response.blob();
+          formData.append("image", blob, filename);
+        } else {
+          formData.append("image", {
+            uri: imageAsset.uri,
+            name: filename,
+            type: mimeType,
+          });
+        }
       }
 
       await addUser(formData);
@@ -94,7 +104,6 @@ export default function AddUserScreen({ navigation, route }) {
         {
           text: "OK",
           onPress: () => {
-            route.params.refresh();
             navigation.goBack();
           },
         },
@@ -141,13 +150,13 @@ export default function AddUserScreen({ navigation, route }) {
         <Text style={styles.label}>Ảnh đại diện</Text>
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
           <Text style={styles.imagePickerText}>
-            {image ? "📷 Đổi ảnh" : "📷 Chọn ảnh"}
+            {imageAsset ? "📷 Đổi ảnh" : "📷 Chọn ảnh"}
           </Text>
         </TouchableOpacity>
 
-        {image && (
+        {imageAsset && (
           <View style={styles.imagePreview}>
-            <Image source={{ uri: image }} style={styles.previewImage} />
+            <Image source={{ uri: imageAsset.uri }} style={styles.previewImage} />
           </View>
         )}
 
