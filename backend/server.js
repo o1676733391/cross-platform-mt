@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const userRoutes = require("./routes/userRoutes");
-const path = require("path");
+const fileRoutes = require("./routes/fileRoutes");
 
 dotenv.config();
 const app = express();
@@ -13,11 +13,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files - serve uploaded images
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/files", fileRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {
